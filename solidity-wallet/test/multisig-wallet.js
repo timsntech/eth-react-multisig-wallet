@@ -10,12 +10,52 @@ contract("MultiSigWallet", accounts => {
     const owners = [accounts[0], accounts[1], accounts[2]]
     const NUM_CONFIRMATIONS_REQUIRED = 2
 
-
+    // init wallet
     let wallet
     beforeEach(async () => {
         wallet = await MultiSigWallet.new(owners, NUM_CONFIRMATIONS_REQUIRED)
     })
 
+    // test constructor
+    describe("constructor", () => {
+        it("should deploy", async () => {
+            const wallet = await MultiSigWallet.new(
+                owners,
+                NUM_CONFIRMATIONS_REQUIRED
+              )
+        
+            for (let i = 0; i < owners.length; i++) {
+                assert.equal(await owners[i], owners[i])
+              }
+            assert.equal(await wallet.getNumConfirmationsRequired(), NUM_CONFIRMATIONS_REQUIRED)
+        })
+        
+        it("should reject if no owners", async () => {
+            await expect(MultiSigWallet.new([], NUM_CONFIRMATIONS_REQUIRED)).to.be.rejected
+        })
+
+        it("should reject if num conf required > owners", async () => {
+            await expect(MultiSigWallet.new(owners, owners.length + 1)).to.be.rejected
+        })
+        
+        it("should reject if owners are not unique", async () => {
+            await expect(MultiSigWallet.new(owners[0], owners[0], NUM_CONFIRMATIONS_REQUIRED)).to.be.rejected
+        })
+    })
+
+    // fallback should receive ether
+    describe("fallback", () => {
+        it("should receive ether", async () => {
+            const { logs } = await wallet.sendTransaction({
+                from: accounts[0],
+                value: 1
+            })
+            assert.equal(logs[0].event, "Deposit")
+            assert.equal(logs[0].args.sender, accounts[0])
+            assert.equal(logs[0].args.amount, 1)
+            assert.equal(logs[0].args.balance, 1)
+        })
+    })
 
     describe("executeTransaction", () => {
         beforeEach(async () => {
@@ -137,7 +177,7 @@ contract("MultiSigWallet", accounts => {
     })
     
     // test revoke confirmation
-    describe("revokeConfirmation", async () => {
+    describe("revokeConfirmation", () => {
         beforeEach(async () => {
             const to = accounts[3]
             const value = 0
@@ -172,6 +212,21 @@ contract("MultiSigWallet", accounts => {
            await expect(
                wallet.revokeConfirmation(1, {from: owners[0]})
            ).to.be.rejected
+        })
+    })
+
+    describe("getOwners", () => {
+        it("should get owners", async () => {
+            const res = await wallet.getOwners()
+            for (let i = 0; i < res.length; i++) {
+                assert.equal(res[i], owners[i])                
+            }
+        })
+    })
+
+    describe("getTransactionCount", () => {
+        it("should return tx count", async () => {
+            assert.equal(await wallet.getTransactionCount(), 0)
         })
     })
     

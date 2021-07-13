@@ -41,7 +41,7 @@ contract MultiSigWallet {
     
     
      // store address of owners
-    address[] owners;
+    address[] public owners;
     
     // this will tell whether an address is an owner or not
     mapping(address => bool) public isOwner;
@@ -211,6 +211,11 @@ contract MultiSigWallet {
     // get the owners
     function getOwners() public view returns (address[] memory) {
         return owners;
+    }
+
+    // get the owners
+    function getNumConfirmationsRequired() public view returns (uint) {
+        return numConfirmationsRequired;
     }
 
     // get tx count
